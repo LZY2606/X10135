@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>检查点实验台</title>
+  </head>
+  <body>
+    <main class="shell">
+      <header>
+        <div>
+          <p class="eyebrow">Local streaming checkpoint laboratory</p>
+          <h1>检查点实验台</h1>
+          <p id="statusMessage" class="status">正在启动……</p>
+        </div>
+        <div class="status-card">
+          <span>运行状态</span>
+          <strong id="runtimeStatus">-</strong>
+          <small id="latestCheckpoint">无完整检查点</small>
+        </div>
+      </header>
+
+      <section class="grid controls">
+        <form id="partitionForm" class="panel">
+          <h2>1. 创建分区</h2>
+          <label>分区名<input name="partition" required placeholder="orders-a" /></label>
+          <button>创建分区</button>
+        </form>
+
+        <form id="eventForm" class="panel wide">
+          <h2>2. 追加事件</h2>
+          <div class="form-row">
+            <label>分区<input name="partition" required placeholder="orders-a" /></label>
+            <label>Key<input name="key" required placeholder="customer-1" /></label>
+            <label>数值<input name="value" type="number" value="1" required /></label>
+            <label>幂等键（可选）<input name="idempotencyKey" placeholder="留空则用 partition:offset" /></label>
+          </div>
+          <button>追加事件</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>3. 消费与检查点</h2>
+        <div class="toolbar">
+          <button id="restartBtn" class="primary">启动 / 崩溃后重启</button>
+          <button id="pauseBtn">暂停</button>
+          <button id="resumeBtn">继续</button>
+          <button id="stepBtn">单步</button>
+          <label class="inline">批量
+            <input id="batchSize" type="number" min="1" value="3" />
+          </label>
+          <button id="batchBtn">批量消费</button>
+          <button id="consumeAllBtn">消费全部</button>
+          <button id="checkpointBtn" class="primary">立即检查点</button>
+        </div>
+        <p class="hint">默认每 5 次交付自动尝试检查点；offset 只在状态事务提交时前进。</p>
+      </section>
+
+      <section class="panel">
+        <h2>4. 故障注入与版本迁移</h2>
+        <div class="toolbar wrap">
+          <label>崩溃点
+            <select id="crashPoint">
+              <option value="beforeStateWrite">写状态前</option>
+              <option value="afterStateWrite">写状态后</option>
+              <option value="beforeOffsetCommit">提交 offset 前</option>
+              <option value="beforeCheckpointRename">检查点 rename 前</option>
+              <option value="afterCheckpointRename">检查点 rename 后</option>
+              <option value="beforeCheckpointWrite">检查点写入前</option>
+            </select>
+          </label>
+          <button id="armCrashBtn">预置一次性崩溃</button>
+          <button id="clearCrashBtn">取消故障</button>
+          <span class="divider"></span>
+          <label>请求版本
+            <select id="processorVersion">
+              <option value="1">v1（无平均值）</option>
+              <option value="2">v2（有平均值）</option>
+            </select>
+          </label>
+          <label class="checkbox"><input id="simulateMigrationFailure" type="checkbox" /> 模拟迁移失败</label>
+          <button id="migrateBtn">显式迁移到目标版本</button>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>分区游标</h2>
+          <table>
+            <thead><tr><th>分区</th><th>已提交 offset</th><th>输入高水位</th><th>未提交事件</th></tr></thead>
+            <tbody id="partitionRows"></tbody>
+          </table>
+        </article>
+
+        <article class="panel">
+          <h2>聚合状态</h2>
+          <table>
+            <thead><tr><th>Key</th><th>Count</th><th>Sum</th><th>Average</th></tr></thead>
+            <tbody id="aggregateRows"></tbody>
+          </table>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h2>处理次数对比</h2>
+          <dl class="metrics">
+            <div><dt>至少一次处理次数</dt><dd id="attempts">0</dd></div>
+            <div><dt>有效状态变更次数</dt><dd id="effectiveChanges">0</dd></div>
+            <div><dt>重复幂等投递</dt><dd id="duplicates">0</dd></div>
+            <div><dt>完整检查点</dt><dd id="checkpointCount">0</dd></div>
+            <div><dt>注入崩溃次数（当前实例）</dt><dd id="crashes">0</dd></div>
+          </dl>
+        </article>
+
+        <article class="panel">
+          <h2>实验持久化</h2>
+          <div class="toolbar wrap">
+            <button id="exportBtn" class="primary">导出实验 JSON</button>
+            <label class="file-button">
+              导入并重放
+              <input id="importFile" type="file" accept="application/json" hidden />
+            </label>
+            <button id="clearBtn" class="danger">清空本地数据</button>
+          </div>
+          <p class="hint">导入会写入空存储；导出后可在另一个空实例验证相同状态哈希。</p>
+          <h3>迁移记录</h3>
+          <ul id="migrationList" class="record-list"></ul>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>事件与检查点记录</h2>
+        <div class="grid">
+          <div>
+            <h3>输入日志（按分区稳定展示）</h3>
+            <table>
+              <thead><tr><th>分区</th><th>Offset</th><th>Key</th><th>值</th><th>幂等键</th></tr></thead>
+              <tbody id="eventRows"></tbody>
+            </table>
+          </div>
+          <div>
+            <h3>完整检查点</h3>
+            <ul id="checkpointList" class="record-list"></ul>
+          </div>
+        </div>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,90 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #eef2f7;
+  color: #172033;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select { font: inherit; }
+button, .file-button {
+  border: 1px solid #94a3b8;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+  font-weight: 650;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+button:hover, .file-button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(15, 23, 42, 0.09); }
+button.primary { background: #1d4ed8; border-color: #1d4ed8; color: white; }
+button.danger { background: #fff1f2; border-color: #fb7185; color: #be123c; }
+input, select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  background: #fff;
+  min-width: 0;
+}
+label { display: grid; gap: 0.3rem; font-size: 0.85rem; font-weight: 650; color: #475569; }
+.shell { width: min(1440px, calc(100% - 32px)); margin: 0 auto; padding: 32px 0 56px; }
+header { display: flex; justify-content: space-between; gap: 24px; align-items: stretch; margin-bottom: 22px; }
+h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.04em; }
+h2 { margin: 0 0 16px; font-size: 1.08rem; }
+h3 { margin: 18px 0 10px; font-size: 0.95rem; }
+.eyebrow { margin: 0 0 8px; color: #2563eb; font-weight: 800; text-transform: uppercase; letter-spacing: 0.13em; font-size: 0.72rem; }
+.status { margin: 10px 0 0; color: #475569; }
+.status-card {
+  min-width: 210px;
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  background: white;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+}
+.status-card span, .status-card small { color: #64748b; }
+.status-card strong { margin: 7px 0; font-size: 1.7rem; text-transform: capitalize; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+.controls { margin-bottom: 18px; }
+.panel {
+  background: rgba(255,255,255,0.94);
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+form.panel { margin-bottom: 0; }
+form.panel button { justify-self: start; margin-top: 12px; }
+.form-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.toolbar.wrap { align-items: center; }
+.inline { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.inline input { width: 5.5rem; }
+.checkbox { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.checkbox input { width: auto; }
+.divider { width: 1px; align-self: stretch; background: #cbd5e1; margin: 0 6px; }
+.hint { color: #64748b; font-size: 0.86rem; margin: 12px 0 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; border-bottom: 1px solid #e2e8f0; padding: 0.62rem 0.5rem; }
+th { color: #64748b; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.metrics div { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; }
+.metrics dt { color: #64748b; font-size: 0.76rem; font-weight: 750; }
+.metrics dd { margin: 8px 0 0; font-size: 1.55rem; font-weight: 850; }
+.record-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; max-height: 320px; overflow: auto; }
+.record-list li { border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px; background: #f8fafc; font-size: 0.83rem; }
+.record-list strong { display: block; margin-bottom: 4px; }
+.badge { display: inline-block; border-radius: 999px; padding: 0.12rem 0.55rem; font-weight: 800; font-size: 0.75rem; }
+.badge.ok { background: #dcfce7; color: #166534; }
+.badge.fail { background: #ffe4e6; color: #9f1239; }
+@media (max-width: 900px) {
+  .grid, .form-row { grid-template-columns: 1fr; }
+  header { flex-direction: column; }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
