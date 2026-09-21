@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>检查点实验台</title>
+  </head>
+  <body>
+    <header class="topbar">
+      <h1>检查点实验台</h1>
+      <div class="meta">
+        <span id="run-state" class="badge">--</span>
+        <span>处理器版本：<b id="proc-version">-</b></span>
+        <span>状态哈希：<code id="state-hash">-</code></span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card span2">
+        <h2>1. 输入日志（追加事件）</h2>
+        <div class="row">
+          <button id="btn-add-partition">创建分区</button>
+          <button id="btn-sample">每分区填充 3 条示例</button>
+        </div>
+        <form id="append-form" class="row wrap">
+          <label>分区 <input id="in-partition" type="number" min="0" value="0" style="width:5rem" /></label>
+          <label>聚合 key <input id="in-key" value="alpha" style="width:7rem" /></label>
+          <label>数值 <input id="in-value" type="number" value="1" style="width:5rem" /></label>
+          <label>幂等键（可空，默认 分区:offset）
+            <input id="in-idem" placeholder="p0:0" style="width:11rem" />
+          </label>
+          <button type="submit">追加事件</button>
+        </form>
+        <p class="hint">同一分区内严格按 offset 有序；分区间没有全局到达顺序。</p>
+      </section>
+
+      <section class="card">
+        <h2>2. 消费控制</h2>
+        <div class="row wrap">
+          <button id="btn-start">启动（连续）</button>
+          <button id="btn-pause">暂停</button>
+          <button id="btn-step">单步 1 条</button>
+          <button id="btn-batch">批量 5 条</button>
+          <button id="btn-checkpoint" class="primary">立即检查点</button>
+        </div>
+        <form id="config-form" class="row wrap">
+          <label>每 N 次提交自动检查点
+            <input id="cfg-every" type="number" min="0" style="width:5rem" />
+          </label>
+          <label>定时检查点间隔 ms（0=关闭）
+            <input id="cfg-interval" type="number" min="0" style="width:7rem" />
+          </label>
+          <button type="submit">保存配置</button>
+        </form>
+        <div id="migration-box" class="row wrap hidden">
+          <button id="btn-migrate-v2">显式迁移到 v2 并恢复</button>
+          <button id="btn-fail-migrate">模拟迁移失败（v99，回滚）</button>
+        </div>
+        <div class="row wrap">
+          <button id="btn-force-v1">无检查点时切换处理器 v1</button>
+          <button id="btn-force-v2">无检查点时切换处理器 v2</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>3. 故障注入（预设崩溃点）</h2>
+        <div class="row wrap">
+          <button data-crash="beforeStateWrite">写状态前崩溃</button>
+          <button data-crash="afterStateWriteBeforeCommit">写状态后/提交前崩溃</button>
+          <button data-crash="beforeOffsetCommit">提交 offset 前崩溃</button>
+          <button data-crash="beforeCheckpointRename">检查点 rename 前崩溃</button>
+          <button data-crash="afterCheckpointRename">检查点 rename 后崩溃</button>
+        </div>
+        <p class="hint">先“武装”崩溃点，再执行单步/批量/检查点触发。崩溃后点击下方恢复。</p>
+        <div class="row wrap">
+          <button id="btn-recover" class="primary">重启恢复（从最后完整检查点）</button>
+          <span id="crash-info" class="hint"></span>
+        </div>
+      </section>
+
+      <section class="card span2">
+        <h2>4. 分区游标</h2>
+        <table>
+          <thead>
+            <tr><th>分区</th><th>高水位 HWM</th><th>界面游标（显示位置）</th><th>已提交 offset（检查点/WAL）</th></tr>
+          </thead>
+          <tbody id="partitions-body"></tbody>
+        </table>
+        <p class="hint">显示位置只反映内存进度；重启以最后一个完整检查点为准，显示位置不构成提交语义。</p>
+      </section>
+
+      <section class="card">
+        <h2>5. 聚合状态（按 key 稳定排序）</h2>
+        <table>
+          <thead><tr><th>key</th><th>sum</th><th>count</th><th>sumSq (v2)</th></tr></thead>
+          <tbody id="aggregates-body"></tbody>
+        </table>
+        <p class="hint">合并展示采用 key 字典序的稳定策略，展示顺序不影响提交语义。</p>
+      </section>
+
+      <section class="card">
+        <h2>6. 处理次数对比</h2>
+        <ul class="stats">
+          <li>至少一次处理次数（deliveries）：<b id="stat-deliveries">0</b></li>
+          <li>有效状态变更次数（effectiveChanges）：<b id="stat-effective">0</b></li>
+          <li>本次重启重放的已提交事务：<b id="stat-replayed">0</b></li>
+          <li>恢复自检查点序号：<b id="stat-recovered">-</b></li>
+        </ul>
+        <p class="hint">重复投递会再次经过处理器（deliveries 增加），但幂等键去重使 effectiveChanges 不重复增加。</p>
+      </section>
+
+      <section class="card">
+        <h2>7. 检查点与迁移记录</h2>
+        <ul id="checkpoint-list" class="list"></ul>
+        <h3>迁移记录</h3>
+        <ul id="migration-list" class="list"></ul>
+      </section>
+
+      <section class="card">
+        <h2>8. 持久化与导出</h2>
+        <div class="row wrap">
+          <button id="btn-export">导出实验 JSON</button>
+          <button id="btn-reset" class="danger">清空实例（重置持久化）</button>
+        </div>
+        <p class="hint">事件、检查点、WAL 与迁移记录全部持久化在本地磁盘；导出包可导入空实例并重放出相同状态哈希。</p>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+    <script type="module" src="/src/web/main.ts"></script>
+  </body>
+</html>

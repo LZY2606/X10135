@@ -1,0 +1,18 @@
+{
+  "name": "checkpoint-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "本地流处理检查点实验台",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5219",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "vitest": "^2.1.5"
+  }
+}

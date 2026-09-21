@@ -34,3 +34,6 @@ coverage/
 .vite/
 .turbo/
 *.tsbuildinfo
+
+# 本地实验台持久化数据
+.lab-data/
